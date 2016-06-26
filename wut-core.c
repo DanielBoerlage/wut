@@ -9,6 +9,7 @@
 #include <wayland-client.h>
 
 #include "wut-core.h"
+#include "wut-client.h"
 
 struct wl_display *display;
 struct wl_compositor *compositor;

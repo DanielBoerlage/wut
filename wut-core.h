@@ -1,5 +1,5 @@
-#ifndef _wut_core_h_
-#define _wut_core_h_
+#ifndef WUT_CORE_H
+#define WUT_CORE_H
 
 #include <inttypes.h>
 #include <wayland-client.h>
