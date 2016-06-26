@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <wayland-client.h>
 
-const int pixel_format;
 typedef uint32_t pixel;
+const int pixel_format;
 
 #endif

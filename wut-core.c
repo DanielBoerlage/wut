@@ -43,12 +43,12 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 	.configure = shell_surface_configure,
 };
 
-struct window *create_window(int width, int height, int shm_fd) {
+struct window *create_window(int w, int h, int shm_fd) {
 	struct window *win = malloc(sizeof(struct window));
 	if (!win) return NULL;
 
-	win->w = width;
-	win->h = height;
+	win->w = w;
+	win->h = h;
 
 	win->surface = wl_compositor_create_surface(compositor);
 	if (!win->surface) return err_null("create_window", "Failed to create window surface");
@@ -73,16 +73,23 @@ struct window *create_window(int width, int height, int shm_fd) {
 	// memset(win->shm_data, 0x88, (width * height) * 2);
 	// memset(win->shm_data + ((width * height)/2), 0xFF, (width * height) * 2);
 
+
 	win->shm_fd = shm_fd;
-	struct wl_shm_pool *pool = wl_shm_create_pool(shm, shm_fd, 65536);
-	// if (pool) puts("Got pool");
-	win->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4, WL_SHM_FORMAT_XRGB8888);
-	// if (window->buffer) puts("Got buffer");
+	int shm_data_len = w * h * sizeof(pixel) * 2;
+	win->shm_data = mmap(NULL, shm_data_len, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	if (win->shm_data == MAP_FAILED) return err_null("create_window", "Failed to mmap shm file");
+
+	struct wl_shm_pool *pool = wl_shm_create_pool(shm, shm_fd, shm_data_len);
+	if (!pool) return err_null("create_window", "Failed to create shm pool");
+
+	win->buffer[0] = wl_shm_pool_create_buffer(pool, )
+	win->buffer = wl_shm_pool_create_buffer(pool, 0, w, h, w * sizeof(, pixel_format);
+
 	wl_shm_pool_destroy(pool);
-	close(fd);
+
 
 	wl_surface_attach(win->surface, win->buffer, 0, 0);
-	wl_surface_damage(win->surface, 0, 0, width, height);
+	wl_surface_damage(win->surface, 0, 0, w, h);
 	wl_surface_commit(win->surface);
 
 	wl_display_dispatch(display);
