@@ -1,4 +1,3 @@
-// #define _POSIX_C_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,28 +5,15 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-// nonstandard BSD extension
-#include <err.h>
-
+#include <inttypes.h>
 #include <wayland-client.h>
 
-// #include <fontconfig/fontconfig.h>
+#include "wut-core.h"
 
 struct wl_display *display;
 struct wl_compositor *compositor;
 struct wl_shell *shell;
 struct wl_shm *shm;
-int window_number = 0;
-
-struct window {
-	int x, y, w, h;
-	struct wl_surface *surface;
-	struct wl_shell_surface *shell_surface;
-	struct wl_buffer *buffer;
-	void *shm_data;
-	char *shm_filename;
-};
 
 void shell_surface_ping(void *data, struct wl_shell_surface *shell_surface, uint32_t serial) {
 	puts("pong!");
@@ -41,7 +27,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 	.configure = shell_surface_configure,
 };
 
-struct window *create_window(int width, int height) {
+struct window *create_window(int width, int height, char *shm_filename) {
 	struct window *window = malloc(sizeof(struct window));
 	if (!window) return NULL;
 
@@ -55,25 +41,22 @@ struct window *create_window(int width, int height) {
 	wl_shell_surface_add_listener(window->shell_surface, &shell_surface_listener, 0);
 	wl_shell_surface_set_toplevel(window->shell_surface);
 
-
-	char *filename = malloc(sizeof(char) * 256);
-	snprintf(filename, 256, "/wut_buffer-%d-%d", getpid(), window_number++);
-	window->shm_filename = filename;
-	int fd = shm_open(filename, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+	window->shm_filename = shm_filename;
+	int fd = open(shm_filename, O_RDWR);
 	if (fd < 0) {
-		warnx("Failed to open window buffer shm file");
+		puts("Failed to open window buffer shm file");
 		return NULL;
 	}
-	ftruncate(fd, 65536);
 
 	window->shm_data = mmap(NULL, 65536, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (window->shm_data == MAP_FAILED) {
-		warnx("Failed to mmap shm file");
+		// warnx("Failed to mmap shm file");
+		puts("Failed to mmap shm file");
 		close(fd);
 		return NULL;
 	}
-	memset(window->shm_data, 0x44, width * height * 2);
-	memset(window->shm_data + (width * height * 2), 0x99, width * height * 2);
+	memset(window->shm_data, 0x88, (width * height) * 2);
+	memset(window->shm_data + ((width * height)/2), 0xFF, (width * height) * 2);
 
 	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, 65536);
 	if (pool) puts("Got pool");
@@ -116,7 +99,8 @@ const struct wl_registry_listener global_registry_listener = {
 
 void init_wayland(void) {
 	display = wl_display_connect(NULL);
-	if (!display) errx(1, "Could not connect to a wayland display");
+	// if (!display) errx(1, "Could not connect to a wayland display");
+	if (!display) puts("Could not connect to a wayland display");
 
 	struct wl_registry *registry = wl_display_get_registry(display);
 	wl_registry_add_listener(registry, &global_registry_listener, NULL);
@@ -141,7 +125,7 @@ int main() {
 
 	// surface = wl_compositor_create_surface(compositor)
 
-	struct window *win = create_window(100, 100);
+	struct window *win = create_window(100, 100, "/dev/shm/wut-shm");
 	if (win->surface) printf("Created surface\n");
 
 	printf("shm_filename: %s\n", win->shm_filename);
