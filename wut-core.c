@@ -26,6 +26,11 @@ void err_exit(char *src, char *msg) {
 	exit(1);
 }
 
+void *err_null(char *src, char *msg) {
+	err(src, msg);
+	return NULL;
+}
+
 void shell_surface_ping(void *data, struct wl_shell_surface *shell_surface, uint32_t serial) {
 	puts("pong!");
 	wl_shell_surface_pong(shell_surface, serial);
@@ -38,61 +43,66 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 	.configure = shell_surface_configure,
 };
 
-struct window *create_window(int width, int height, char *shm_filename) {
-	struct window *window = malloc(sizeof(struct window));
-	if (!window) return NULL;
+struct window *create_window(int width, int height, int shm_fd) {
+	struct window *win = malloc(sizeof(struct window));
+	if (!win) return NULL;
 
-	window->w = width;
-	window->h = height;
-	window->surface = wl_compositor_create_surface(compositor);
-	if (window->surface) puts("Got surface");
-	window->shell_surface = wl_shell_get_shell_surface(shell, window->surface);
-	if (window->shell_surface) puts("Got shell_surface");
-	else puts("Error getting shell_surface");
-	wl_shell_surface_add_listener(window->shell_surface, &shell_surface_listener, 0);
-	wl_shell_surface_set_toplevel(window->shell_surface);
+	win->w = width;
+	win->h = height;
 
-	window->shm_filename = shm_filename;
-	int fd = open(shm_filename, O_RDWR);
-	if (fd < 0) {
-		err("create_window", "Failed to open window buffer shm file");
-		return NULL;
-	}
+	win->surface = wl_compositor_create_surface(compositor);
+	if (!win->surface) return err_null("create_window", "Failed to create window surface");
 
-	window->shm_data = mmap(NULL, 65536, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (window->shm_data == MAP_FAILED) {
-		err("create_window", "Failed to mmap shm file");
-		close(fd);
-		return NULL;
-	}
-	memset(window->shm_data, 0x88, (width * height) * 2);
-	memset(window->shm_data + ((width * height)/2), 0xFF, (width * height) * 2);
+	win->shell_surface = wl_shell_get_shell_surface(shell, win->surface);
+	if (!win->shell_surface) return err_null("create_window", "Failed to create window shell surface");
 
-	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, 65536);
-	if (pool) puts("Got pool");
-	window->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4, WL_SHM_FORMAT_XRGB8888);
-	if (window->buffer) puts("Got buffer");
+	wl_shell_surface_add_listener(win->shell_surface, &shell_surface_listener, NULL);
+	wl_shell_surface_set_toplevel(win->shell_surface);
+
+	// win->shm_filename = shm_filename;
+	// int fd = open(shm_filename, O_RDWR);
+	// if (fd < 0) return err_null("create_window", "Failed to open window buffer shm file");
+
+	//change
+	// win->shm_data = mmap(NULL, 65536, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	// if (win->shm_data == MAP_FAILED) {
+	// 	err("create_window", "Failed to mmap shm file");
+	// 	close(fd);
+	// 	return NULL;
+	// }
+	// memset(win->shm_data, 0x88, (width * height) * 2);
+	// memset(win->shm_data + ((width * height)/2), 0xFF, (width * height) * 2);
+
+	win->shm_fd = shm_fd;
+	struct wl_shm_pool *pool = wl_shm_create_pool(shm, shm_fd, 65536);
+	// if (pool) puts("Got pool");
+	win->buffer = wl_shm_pool_create_buffer(pool, 0, width, height, width * 4, WL_SHM_FORMAT_XRGB8888);
+	// if (window->buffer) puts("Got buffer");
 	wl_shm_pool_destroy(pool);
 	close(fd);
 
-	wl_surface_attach(window->surface, window->buffer, 0, 0);
-	wl_surface_damage(window->surface, 0, 0, width, height);
-	wl_surface_commit(window->surface);
+	wl_surface_attach(win->surface, win->buffer, 0, 0);
+	wl_surface_damage(win->surface, 0, 0, width, height);
+	wl_surface_commit(win->surface);
 
-
-	return window;
+	wl_display_dispatch(display);
+	return win;
 }
 
 void destroy_window(struct window *window) {
 	wl_surface_destroy(window->surface);
-	shm_unlink(window->shm_filename);
-	free(window->shm_filename);
-	//wl_buffer_destroy(window->buffer); //causeing segfault
+	wl_buffer_destroy(window->buffer);
 	free(window);
 }
 
+//tmp
+void display_dispatch(void) {
+	int r = 1;
+	while(r) r = wl_display_dispatch(display);
+}
+
 void global_registry_handler(void *data, struct wl_registry *reg, uint32_t id, const char *interface, uint32_t version) {
-	printf("Got a registry event for %s id %d\n", interface, id);
+	// printf("Got a registry event for %s id %d\n", interface, id);
 	if (strcmp(interface, "wl_compositor") == 0) compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
 	else if (strcmp(interface, "wl_shell") == 0) shell = wl_registry_bind(reg, id, &wl_shell_interface, 1);
 	else if (strcmp(interface, "wl_shm") == 0) shm = wl_registry_bind(reg, id, &wl_shm_interface, 1);
