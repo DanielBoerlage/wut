@@ -9,6 +9,7 @@
 #include <wayland-client.h>
 
 #include "wut-core.h"
+#include "wut-display.h"
 #include "wut-client.h"
 
 struct wl_display *display;
@@ -117,52 +118,5 @@ void close_wayland(void) {
 }
 
 int main() {
-
-	init_wayland();
-	printf("Connected to display\n");
-
-	if (compositor) printf("Found compositor\n");
-	if (shell) puts("Got shell");
-
-	// surface = wl_compositor_create_surface(compositor)
-
-	struct window *win = create_window(100, 100, "/dev/shm/wut-shm");
-	if (win->surface) printf("Created surface\n");
-
-	printf("shm_filename: %s\n", win->shm_filename);
-
-	int r = 1;
-	while(r) r = wl_display_dispatch(display);
-
-	destroy_window(win);
-
-	// shell_surface = wl_shell_get_shell_surface(shell, surface);
-	// if (shell_surface) printf("Created shell surface\n");
-
-	// wl_shell_surface_set_toplevel(shell_surface);
-
-
-	// FcConfig *config = FcInitLoadConfigAndFonts();
-	// FcPattern *pat = FcPatternCreate();
-	// FcObjectSet *os = FcObjectSetBuild(FC_FAMILY, FC_STYLE, FC_LANG, FC_FILE, (char *) 0);
-	// FcFontSet *fs = FcFontList(config, pat, os);
-	// printf("Total matching fonts: %d\n", fs->nfont);
-	// for (int i=0; fs && i < fs->nfont; ++i) {
-	// 	FcPattern *font = fs->fonts[i];
-
-	// 	FcChar8 *file, *style, *family;
-	// 	if (FcPatternGetString(font, FC_FILE, 0, &file) == FcResultMatch &&
-	// 		FcPatternGetString(font, FC_FAMILY, 0, &family) == FcResultMatch &&
-	// 		FcPatternGetString(font, FC_STYLE, 0, &style) == FcResultMatch)
-	// 	{
-	// 		printf("%s %s\n", family, style);
-	// 	}
-	// }
-	// if (fs) FcFontSetDestroy(fs);
-
-
-	close_wayland();
-	printf("Disconnected from display\n");
-
-	return 0;
+	client_run();
 }

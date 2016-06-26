@@ -1,11 +1,9 @@
 #ifndef WUT_CORE_H
 #define WUT_CORE_H
 
-#include <inttypes.h>
 #include <wayland-client.h>
 
-const int pixel_format = WL_SHM_FORMAT_XRGB8888;
-typedef uint32_t pixel;
+#include "wut-display.h"
 
 struct window {
 	int x, y, w, h;
