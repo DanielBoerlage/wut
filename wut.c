@@ -72,7 +72,8 @@ struct window *create_window(int width, int height) {
 		close(fd);
 		return NULL;
 	}
-	memset(window->shm_data, 0x00, width * height * 4);
+	memset(window->shm_data, 0x44, width * height * 2);
+	memset(window->shm_data + (width * height * 2), 0x99, width * height * 2);
 
 	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, 65536);
 	if (pool) puts("Got pool");
@@ -81,9 +82,9 @@ struct window *create_window(int width, int height) {
 	wl_shm_pool_destroy(pool);
 	close(fd);
 
-	//wl_surface_attach(window->surface, window->buffer, 0, 0);
-	//wl_surface_damage(window->surface, 0, 0, width, height);
-	//wl_surface_commit(window->surface);
+	wl_surface_attach(window->surface, window->buffer, 0, 0);
+	wl_surface_damage(window->surface, 0, 0, width, height);
+	wl_surface_commit(window->surface);
 
 
 	return window;
