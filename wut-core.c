@@ -59,47 +59,31 @@ struct window *create_window(int w, int h, int shm_fd) {
 	wl_shell_surface_add_listener(win->shell_surface, &shell_surface_listener, NULL);
 	wl_shell_surface_set_toplevel(win->shell_surface);
 
-	// win->shm_filename = shm_filename;
-	// int fd = open(shm_filename, O_RDWR);
-	// if (fd < 0) return err_null("create_window", "Failed to open window buffer shm file");
-
-	//change
-	// win->shm_data = mmap(NULL, 65536, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	// if (win->shm_data == MAP_FAILED) {
-	// 	err("create_window", "Failed to mmap shm file");
-	// 	close(fd);
-	// 	return NULL;
-	// }
-	// memset(win->shm_data, 0x88, (width * height) * 2);
-	// memset(win->shm_data + ((width * height)/2), 0xFF, (width * height) * 2);
-
-
 	win->shm_fd = shm_fd;
-	int shm_data_len = w * h * sizeof(pixel) * 2;
+	int buffer_size = w * h * sizeof(pixel);
+	int shm_data_len = buffer_size * 2;
+	win->shm_data_len = shm_data_len;
+
 	win->shm_data = mmap(NULL, shm_data_len, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
 	if (win->shm_data == MAP_FAILED) return err_null("create_window", "Failed to mmap shm file");
 
 	struct wl_shm_pool *pool = wl_shm_create_pool(shm, shm_fd, shm_data_len);
 	if (!pool) return err_null("create_window", "Failed to create shm pool");
 
-	win->buffer[0] = wl_shm_pool_create_buffer(pool, )
-	win->buffer = wl_shm_pool_create_buffer(pool, 0, w, h, w * sizeof(, pixel_format);
+	win->buffer[0] = wl_shm_pool_create_buffer(pool, 0,           w, h, w * sizeof(pixel), pixel_format);
+	win->buffer[1] = wl_shm_pool_create_buffer(pool, buffer_size, w, h, w * sizeof(pixel), pixel_format);
 
 	wl_shm_pool_destroy(pool);
 
-
-	wl_surface_attach(win->surface, win->buffer, 0, 0);
-	wl_surface_damage(win->surface, 0, 0, w, h);
-	wl_surface_commit(win->surface);
-
-	wl_display_dispatch(display);
 	return win;
 }
 
-void destroy_window(struct window *window) {
-	wl_surface_destroy(window->surface);
-	wl_buffer_destroy(window->buffer);
-	free(window);
+void destroy_window(struct window *win) {
+	wl_surface_destroy(win->surface);
+	wl_buffer_destroy(win->buffer[0]);
+	wl_buffer_destroy(win->buffer[1]);
+	munmap(win->shm_data, win->shm_data_len);
+	free(win);
 }
 
 //tmp
