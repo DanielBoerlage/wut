@@ -17,6 +17,15 @@ struct wl_compositor *compositor;
 struct wl_shell *shell;
 struct wl_shm *shm;
 
+void err(char *src, char *msg) {
+	fprintf(stderr, "%s: %s\n", src, msg);
+}
+
+void err_exit(char *src, char *msg) {
+	err(src, msg);
+	exit(1);
+}
+
 void shell_surface_ping(void *data, struct wl_shell_surface *shell_surface, uint32_t serial) {
 	puts("pong!");
 	wl_shell_surface_pong(shell_surface, serial);
@@ -46,14 +55,13 @@ struct window *create_window(int width, int height, char *shm_filename) {
 	window->shm_filename = shm_filename;
 	int fd = open(shm_filename, O_RDWR);
 	if (fd < 0) {
-		puts("Failed to open window buffer shm file");
+		err("create_window", "Failed to open window buffer shm file");
 		return NULL;
 	}
 
 	window->shm_data = mmap(NULL, 65536, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (window->shm_data == MAP_FAILED) {
-		// warnx("Failed to mmap shm file");
-		puts("Failed to mmap shm file");
+		err("create_window", "Failed to mmap shm file");
 		close(fd);
 		return NULL;
 	}
@@ -102,7 +110,7 @@ const struct wl_registry_listener global_registry_listener = {
 void init_wayland(void) {
 	display = wl_display_connect(NULL);
 	// if (!display) errx(1, "Could not connect to a wayland display");
-	if (!display) puts("Could not connect to a wayland display");
+	if (!display) err_exit("init_wayland", "Could not connect to a wayland display");
 
 	struct wl_registry *registry = wl_display_get_registry(display);
 	wl_registry_add_listener(registry, &global_registry_listener, NULL);

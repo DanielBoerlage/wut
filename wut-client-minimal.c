@@ -5,10 +5,9 @@
 #include "wut-core.h"
 
 void client_run(void) {
-	printf("%d", pixel_format);
 	init_wayland();
 	struct window *win = create_window(100, 100, "/dev/shm/wut-shm");
-	sleep(1);
+	sleep(10);
 	destroy_window(win);
 	close_wayland();
 }
