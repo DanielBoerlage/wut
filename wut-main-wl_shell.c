@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +44,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 	.configure = shell_surface_configure,
 };
 
-struct window *create_window(int w, int h, int shm_fd) {
+struct window *create_window_fd(int w, int h, int shm_fd) {
 	struct window *win = malloc(sizeof(struct window));
 	if (!win) return NULL;
 
@@ -75,6 +76,14 @@ struct window *create_window(int w, int h, int shm_fd) {
 
 	wl_shm_pool_destroy(pool);
 
+	return win;
+}
+
+struct window *create_window(int w, int h) {
+	char filename[] = "/dev/shm/wut_shm_tmp_XXXXXX";
+	int fd = mkstemp(filename);
+	struct window *win = create_window_fd(w, h, fd);
+	close(fd);
 	return win;
 }
 
@@ -126,6 +135,9 @@ void close_wayland(void) {
 	wl_display_disconnect(display);
 }
 
-int main() {
-	client_run();
+int main(int argc, char **argv) {
+	init_wayland();
+	int exit_code = client_run(argc, argv);
+	close_wayland();
+	return exit_code;
 }

@@ -8,39 +8,47 @@
 #include "wut-client.h"
 #include "wut-main.h"
 
-char *read_stdin(void);
+char *read_file(FILE *f);
 
-void client_run(void) {
-	printf("\nfinal output:\n%s\n", read_stdin());
-	// init_wayland();
-	// int fd = open("/dev/shm/wut-shm", O_RDWR);
-	// if (fd < 0) {
-	// 	puts("Failed to open shm file");
-	// 	exit(1);
-	// }
-	// struct window *win = create_window(100, 100, fd);
-	// close(fd);
+struct window *win;
+const color BLACK = 0xff000000;
+const color WHITE = 0xffffffff;
+
+int client_run(int argc, char **argv) {
+
+	char *text = read_file(stdin);
+	char *font = (argc > 0) ? argv[0] : "monospaced";
+	struct rect size = render_text_size(text, font);
+	size.w += 10;
+	size.h += 10;
+
+	win = create_window(size.w, size.h);
+
+	render_draw_rect(win, size, 0, 0, BLACK);
+	render_draw_text(win, text, font, 5, 5, WHITE, BLACK);
+
+	free(text);
+
+	display_dispatch();
 
 	// wl_surface_attach(win->surface, win->buffer[0], 0, 0);
 	// wl_surface_damage(win->surface, 0, 0, win->w, win->h);
 	// wl_surface_commit(win->surface);
-
-	// display_dispatch();
-
-	// destroy_window(win);
-	// close_wayland();
+	return -1;
 }
 
-char *read_stdin(void) {
-	size_t buff_size = 1;  // initial size
+void client_cleanup(void) {
+	if (win) destroy_window(win);
+}
+
+char *read_file(FILE *file) {
+	size_t buff_size = 1024;  // initial size
 	size_t chars_read = 0;
 	char *out = malloc(buff_size);
 	char c;
-	while ((c = fgetc(stdin)) != EOF) {
-		printf("Got char: %c, chars_read: %d, buff_size: %d\n", c, chars_read, buff_size);
+	while ((c = fgetc(file)) != EOF) {
 		if (chars_read + 2 > buff_size) {
 			buff_size <<= 1;
-			printf("Increasing buff_size; now %d\n", buff_size);
 			out = realloc(out, buff_size);
 		}
 		out[chars_read++] = c;

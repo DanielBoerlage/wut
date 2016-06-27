@@ -1,6 +1,8 @@
 #ifndef WUT_CLIENT_H
 #define WUT_CLIENT_H
 
-void client_run(void);
+int client_run(int argc, char **argv);
+void client_cleanup(void);
+
 
 #endif

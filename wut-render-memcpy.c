@@ -28,6 +28,8 @@ pixel *shm,
       *null_glyph,
       *test_glyph;
 
+
+
 pixel *glyph_position(int glyph) {
 	return g_start + (glyph * g_s);
 }
@@ -36,7 +38,10 @@ pixel *matrix_position(int buffer, int row, int col) {
 	return buffer_start[buffer] + (row * g_h * w_w + col * g_w);
 }
 
+struct rect render_text_size(char *text, char *font);
 
+void render_draw_text(struct window *win, char *text, char *font, int x, int y, color fg, color bg);
+void render_draw_rect(struct window *win, struct rect area, int x, int y, color c);
 
 
 
