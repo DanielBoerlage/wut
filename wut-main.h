@@ -3,7 +3,7 @@
 
 #include <wayland-client.h>
 
-#include "wut-display.h"
+#include "wut-render.h"
 
 struct window {
 	int x, y, w, h;
