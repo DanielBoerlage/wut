@@ -38,6 +38,9 @@ int client_run(int argc, char **argv) {
 	win = create_window_fd((struct rect){100, 100}, fd, 0);
 
 	render_draw_rect(win, (struct rect){100, 100}, (struct location){0, 0}, WHITE);
+	render_draw_rect(win, (struct rect){10, 10}, (struct location){20, 20}, BLACK);
+	render_draw_rect(win, (struct rect){10, 10}, (struct location){70, 20}, BLACK);
+	render_draw_rect(win, (struct rect){60, 10}, (struct location){20, 70}, BLACK);
 	render_display(win);
 
 	display_dispatch();
