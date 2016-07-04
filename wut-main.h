@@ -3,31 +3,45 @@
 
 #include <wayland-client.h>
 
-#include "wut-render.h"
+typedef uint32_t pixel;
+const int pixel_format;
 
-struct window {
-	int x, y, w, h;
-	struct wl_surface *surface;
-	struct wl_shell_surface *shell_surface;
-	struct wl_buffer *buffer[2];
-	int shm_fd;
-	int shm_data_len;
-	pixel *shm_data;
+typedef uint32_t color;
+
+struct rect {
+	int w, h;
 };
 
-void init_wayland(void);
-void close_wayland(void);
+struct location {
+	int x, y;
+};
 
-struct window *create_window(int width, int height);
-struct window *create_window_fd(int width, int height, int shm_fd);
+struct buffer {
+	struct wl_buffer *buffer;
+	pixel *buffer_pixels;
+};
+
+struct window {
+	struct location loc;
+	struct rect size;
+	struct wl_surface *surface;
+	void *surface_interface;
+	struct buffer render, display;
+	void *shm_data;
+	int shm_fd;
+	int shm_data_len;
+};
+
+// struct window *create_window(int width, int height);
+struct window *create_window_fd(struct rect size, int shm_fd, int offset);
 void destroy_window(struct window *window);
 
 //tmp
 void display_dispatch(void);
 
-void err(char *src, char *msg);
-void err_exit(char *src, char *msg);
-void *err_null(char *src, char *msg);
+void err(char *msg);
+void err_exit(char *msg);
+void *err_null(char *msg);
 
 
 #endif

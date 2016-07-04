@@ -4,5 +4,4 @@
 int client_run(int argc, char **argv);
 void client_cleanup(void);
 
-
 #endif
