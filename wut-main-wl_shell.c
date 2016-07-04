@@ -43,6 +43,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 	.configure = shell_surface_configure,
 };
 
+// most of theses errors dont free win
 struct window *create_window_fd(struct rect size, int shm_fd, int offset) {
 	struct window *win = malloc(sizeof(struct window));
 	if (!win) return NULL;
@@ -66,15 +67,19 @@ struct window *create_window_fd(struct rect size, int shm_fd, int offset) {
 	if (win->shm_data == MAP_FAILED) return err_null("Failed to mmap shm file");
 
 	win->display.buffer_pixels = (pixel *)win->shm_data + offset;
-	win->render.buffer_pixels  = (pixel *)win->shm_data + offset + buffer_size;
+	win->render.buffer_pixels  = (pixel *)win->shm_data + (offset + size.w * size.h);
 
 	struct wl_shm_pool *pool = wl_shm_create_pool(shm, shm_fd, win->shm_data_len);
 	if (!pool) return err_null("Failed to create shm pool");
 
 	win->display.buffer = wl_shm_pool_create_buffer(pool, offset,               size.w, size.h, size.w * sizeof(pixel), pixel_format);
+	if (!win->display.buffer) return err_null("Failed to create display buffer");
 	win->render.buffer  = wl_shm_pool_create_buffer(pool, offset + buffer_size, size.w, size.h, size.w * sizeof(pixel), pixel_format);
+	if (!win->render.buffer) return err_null("Failed to create render buffer");
 
 	wl_shm_pool_destroy(pool);
+
+	render_init_window(win);
 
 	return win;
 }

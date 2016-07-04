@@ -33,21 +33,30 @@ char *read_file(FILE *file) {
 
 int client_run(int argc, char **argv) {
 
-	char *text = read_file(stdin);
-	char *font = (argc > 0) ? argv[0] : "monospaced";
-	struct rect size = render_text_size(text, font);
-	size.w += 10;
-	size.h += 10;
+	int fd = open("/dev/shm/wut-shm", O_RDWR);
 
-	win = create_window_fd(size, 0, 0);
+	win = create_window_fd((struct rect){100, 100}, fd, 0);
 
-	render_draw_rect(win, size, (struct location){0, 0}, BLACK);
-	render_set_font(font);
-	render_draw_text(win, text, (struct location){5, 5}, size, WHITE, BLACK);
-
-	free(text);
+	render_draw_rect(win, (struct rect){100, 100}, (struct location){0, 0}, WHITE);
+	render_display(win);
 
 	display_dispatch();
+
+	// char *text = read_file(stdin);
+	// char *font = (argc > 0) ? argv[0] : "monospaced";
+	// struct rect size = render_text_size(text, font);
+	// size.w += 10;
+	// size.h += 10;
+
+	// win = create_window_fd(size, 0, 0);
+
+	// render_draw_rect(win, size, (struct location){0, 0}, BLACK);
+	// render_set_font(font);
+	// render_draw_text(win, text, (struct location){5, 5}, size, WHITE, BLACK);
+
+	// free(text);
+
+	// display_dispatch();
 
 	// wl_surface_attach(win->surface, win->buffer[0], 0, 0);
 	// wl_surface_damage(win->surface, 0, 0, win->w, win->h);
