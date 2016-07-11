@@ -1,7 +1,7 @@
 #ifndef WUT_RENDER_H
 #define WUT_RENDER_H
 
-#include "wut-main.h"
+#include "../main/main.h"
 
 void render_init_window(struct window *win);
 

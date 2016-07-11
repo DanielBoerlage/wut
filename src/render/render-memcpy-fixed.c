@@ -1,7 +1,8 @@
 #include <wayland-client.h>
 #include <string.h>
 
-#include "wut-render.h"
+#include "render.h"
+#include "render-memcpy-fixed.h"
 
 #include <stdio.h>
 

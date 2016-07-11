@@ -2,12 +2,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <wayland-client.h>
 #include <string.h>
+#include <signal.h>
 
-#include "wut-client.h"
-#include "wut-main.h"
-#include "wut-render.h"
+#include "client.h"
+#include "../main/main.h"
+#include "../render/render.h"
 
 struct window *win;
 const color BLACK = 0xff000000;
@@ -30,18 +30,22 @@ char *read_file(FILE *file) {
 	return out;
 }
 
+void terminate(int sig) {
+	destroy_window(win);
+	exit(0);
+}
 
 int client_run(int argc, char **argv) {
 
-	int fd = open("/dev/shm/wut-shm", O_RDWR);
-
-	win = create_window_fd((struct rect){100, 100}, fd, 0);
+	win = create_window((struct rect){100, 100});
 
 	render_draw_rect(win, (struct rect){100, 100}, (struct location){0, 0}, WHITE);
 	render_draw_rect(win, (struct rect){10, 10}, (struct location){20, 20}, BLACK);
 	render_draw_rect(win, (struct rect){10, 10}, (struct location){70, 20}, BLACK);
 	render_draw_rect(win, (struct rect){60, 10}, (struct location){20, 70}, BLACK);
 	render_display(win);
+
+	signal(SIGINT, terminate);
 
 	display_dispatch();
 

@@ -28,12 +28,11 @@ struct window {
 	void *surface_interface;
 	struct buffer render, display;
 	void *shm_data;
-	int shm_fd;
+	char *shm_filename;
 	int shm_data_len;
 };
 
-// struct window *create_window(int width, int height);
-struct window *create_window_fd(struct rect size, int shm_fd, int offset);
+struct window *create_window(struct rect size);
 void destroy_window(struct window *window);
 
 //tmp

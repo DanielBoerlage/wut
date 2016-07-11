@@ -1,4 +1,4 @@
-// #define _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 210112L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,9 +9,9 @@
 #include <inttypes.h>
 #include <wayland-client.h>
 
-#include "wut-main.h"
-#include "wut-render.h"
-#include "wut-client.h"
+#include "main.h"
+#include "../render/render.h"
+#include "../client/client.h"
 
 struct wl_display *display;
 struct wl_compositor *compositor;
@@ -44,7 +44,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 };
 
 // most of theses errors dont free win
-struct window *create_window_fd(struct rect size, int shm_fd, int offset) {
+struct window *create_window(struct rect size) {
 	struct window *win = malloc(sizeof(struct window));
 	if (!win) return NULL;
 
@@ -59,25 +59,30 @@ struct window *create_window_fd(struct rect size, int shm_fd, int offset) {
 	wl_shell_surface_add_listener(win->surface_interface, &shell_surface_listener, NULL);
 	wl_shell_surface_set_toplevel(win->surface_interface);
 
-	win->shm_fd = shm_fd;
 	int buffer_size = size.w * size.h * sizeof(pixel);
-	win->shm_data_len = offset + buffer_size * 2;
+	win->shm_data_len = buffer_size * 2;
 
-	win->shm_data = mmap(NULL, win->shm_data_len, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+	win->shm_filename = malloc(24);
+	strcpy(win->shm_filename, "/dev/shm/wut_shm_XXXXXX");
+	int fd = mkstemp(win->shm_filename);
+	ftruncate(fd, win->shm_data_len);
+
+	win->shm_data = mmap(NULL, win->shm_data_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (win->shm_data == MAP_FAILED) return err_null("Failed to mmap shm file");
 
-	win->display.buffer_pixels = (pixel *)win->shm_data + offset;
-	win->render.buffer_pixels  = (pixel *)win->shm_data + (offset + size.w * size.h);
+	win->display.buffer_pixels = (pixel *)win->shm_data;
+	win->render.buffer_pixels  = (pixel *)win->shm_data + (size.w * size.h);
 
-	struct wl_shm_pool *pool = wl_shm_create_pool(shm, shm_fd, win->shm_data_len);
+	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, win->shm_data_len);
 	if (!pool) return err_null("Failed to create shm pool");
 
-	win->display.buffer = wl_shm_pool_create_buffer(pool, offset,               size.w, size.h, size.w * sizeof(pixel), pixel_format);
+	win->display.buffer = wl_shm_pool_create_buffer(pool, 0,           size.w, size.h, size.w * sizeof(pixel), pixel_format);
 	if (!win->display.buffer) return err_null("Failed to create display buffer");
-	win->render.buffer  = wl_shm_pool_create_buffer(pool, offset + buffer_size, size.w, size.h, size.w * sizeof(pixel), pixel_format);
+	win->render.buffer  = wl_shm_pool_create_buffer(pool, buffer_size, size.w, size.h, size.w * sizeof(pixel), pixel_format);
 	if (!win->render.buffer) return err_null("Failed to create render buffer");
 
 	wl_shm_pool_destroy(pool);
+	close(fd);
 
 	render_init_window(win);
 
@@ -100,6 +105,8 @@ void destroy_window(struct window *win) {
 	wl_buffer_destroy(win->display.buffer);
 	wl_buffer_destroy(win->render.buffer);
 	munmap(win->shm_data, win->shm_data_len);
+	unlink(win->shm_filename);
+	free(win->shm_filename);
 	free(win);
 }
 
