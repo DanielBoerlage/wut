@@ -14,7 +14,7 @@ const color BLACK = 0xff000000;
 const color WHITE = 0xffffffff;
 
 char *read_file(FILE *file) {
-	size_t buff_size = 1024;  // initial size
+	size_t buff_size = 1024;
 	size_t chars_read = 0;
 	char *out = malloc(buff_size);
 	char c;
