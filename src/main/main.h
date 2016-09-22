@@ -9,11 +9,11 @@ const int pixel_format;
 typedef uint32_t color;
 
 struct rect {
-	int w, h;
+	uint32_t w, h;
 };
 
 struct location {
-	int x, y;
+	uint32_t x, y;
 };
 
 struct buffer {
@@ -29,7 +29,7 @@ struct window {
 	struct buffer render, display;
 	void *shm_data;
 	char *shm_filename;
-	int shm_data_len;
+	uint32_t shm_data_len;
 };
 
 struct window *create_window(struct rect size);
