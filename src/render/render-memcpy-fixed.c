@@ -57,11 +57,12 @@ void render_display(struct window *win) {
 pixel *glyphs;
 
 struct rect render_text_area(char *text) {
-	struct rect area = { 0, 0 };
+	if (!text) return (struct rect) { 0, 0 };
+	struct rect area = { 0, glyph.h };
 	uint32_t current_width;
-	for (; text; ++text) {
+	for (; *text; ++text) {
+		if (current_width > area.w) area.w = current_width;
 		if (*text == '\n') {
-			if (current_width > area.w) area.w = current_width;
 			current_width = 0;
 			area.h += glyph.h;
 		} else if (*text >= ' ') {
@@ -85,7 +86,6 @@ void render_draw_text(struct window *win, char *text, struct location loc, struc
 
 	for (; *text; ++text) {
 		if (*text == '\n') {
-			if (current_width > area.w) area.w = current_width;
 			current_width = 0;
 			area.h += glyph.h;
 
@@ -103,6 +103,7 @@ void render_draw_text(struct window *win, char *text, struct location loc, struc
 			current_width += glyph.w;
 			cursor.x += glyph.w;
 		}
+		if (current_width > area.w) area.w = current_width;
 	}
 
 	wl_surface_damage(win->surface, loc.x, loc.y, area.w, area.h);

@@ -5,7 +5,7 @@
 
 void render_init_window(struct window *win);
 
-struct rect render_text_size(char *text, char *font);
+struct rect render_text_area(char *text);
 
 void render_set_font(char *font);
 

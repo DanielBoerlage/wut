@@ -46,12 +46,10 @@ int client_run(int argc, char **argv) {
 	// render_display(win);
 
 	char *text = read_file(stdin);
-
-	win = create_window((struct rect){50,50});
-
 	render_set_font("fontfile");
-
-	render_draw_rect(win, (struct rect) {50,50}, (struct location) {0,0}, BLACK);
+	struct rect area = render_text_area(text);
+	win = create_window(area);
+	render_draw_rect(win, area, (struct location) {0,0}, BLACK);
 	render_draw_text(win, text, (struct location) {0,0}, (struct rect) {1234,1234}, 0, 0);
 	// render_draw_rect(win, (struct rect) {2,3}, (struct location) {2,1}, WHITE);
 
