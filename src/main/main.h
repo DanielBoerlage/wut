@@ -3,17 +3,22 @@
 
 #include <wayland-client.h>
 
-typedef uint32_t pixel;
+typedef uint32_t color;
+typedef color pixel;
 const int pixel_format;
 
-typedef uint32_t color;
+typedef int64_t dim;
 
 struct rect {
-	uint32_t w, h;
+	dim w, h;
 };
 
+// struct rect_area {
+// 	dim w, h, area;
+// }
+
 struct location {
-	uint32_t x, y;
+	dim x, y;
 };
 
 struct buffer {
@@ -29,7 +34,7 @@ struct window {
 	struct buffer render, display;
 	void *shm_data;
 	char *shm_filename;
-	uint32_t shm_data_len;
+	size_t shm_data_len;
 };
 
 struct window *create_window(struct rect size);

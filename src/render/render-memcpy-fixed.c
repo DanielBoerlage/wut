@@ -9,52 +9,52 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <stdbool.h>
 
 const int pixel_format = WL_SHM_FORMAT_ARGB8888;
+static pixel *glyphs;
 
-void attach_buffer(struct window *win) {
-	wl_surface_attach(win->surface, win->render.buffer, 0, 0);
+void render_init(void) {
+	int glyph_file = open(glyph_file_name, O_RDONLY);
+	glyphs = mmap(NULL, glyph_file_size, PROT_READ, MAP_PRIVATE, glyph_file, 0);  //rember to munmap
 }
 
+void render_close(void) {
+	munmap(glyphs, glyph_file_size);
+}
+
+static void attach_buffer(struct window *win) {
+	wl_surface_attach(win->surface, win->render.buffer, 0, 0);
+}
 
 void render_init_window(struct window *win) {
 	attach_buffer(win);
 }
 
-
-void commit_buffer(struct window *win) {
-	wl_surface_commit(win->surface);
-}
-
-void page_flip(struct window *win) {
+static void page_flip(struct window *win) {
 	struct buffer tmp_buffer = win->display;
 	win->display = win->render;
 	win->render = tmp_buffer;
 }
 
-void render_draw_rect(struct window *win, struct rect area, struct location loc, color c) {
-	// pixel *buf = win->render.buffer_pixels;
-	struct location end = {
-		.x = loc.x + area.w,
-		.y = loc.y + area.h,
-	};
-	for (int row = loc.y; row < end.y; ++row) {
-		for (int col = loc.x; col < end.x; ++col) {
-			*(win->render.buffer_pixels + (row * win->size.w + col)) = c;
-		}
-	}
+// void page_copy(struct window *win) {
 
-	wl_surface_damage(win->surface, loc.x, loc.y, area.w, area.h);
-}
+// }
 
-// tmp
 void render_display(struct window *win) {
-	commit_buffer(win);
+	wl_surface_commit(win->surface);
 	page_flip(win);
 	attach_buffer(win);
 }
 
-pixel *glyphs;
+void render_draw_rect(struct window *win, dim x, dim y, dim w, dim h, color c) {
+	dim end_col = x + w, end_row = y + h;
+	for (dim row = y; row < end_row; ++row) {
+		for (dim col = x; col < end_col; ++col) {
+			*(win->render.buffer_pixels + (row * win->size.w + col)) = c;
+		}
+	}
+}
 
 struct rect render_text_area(char *text) {
 	if (!text) return (struct rect) { 0, 0 };
@@ -72,13 +72,11 @@ struct rect render_text_area(char *text) {
 	return area;
 }
 
-// in render-memcpy font is treated as a filename to a font file
-void render_set_font(char *font) {
-	int glyph_file = open(font, O_RDONLY);
-	glyphs = mmap(NULL, glyph_file_size, PROT_READ, MAP_PRIVATE, glyph_file, 0);  //rember to munmap
-}
+void render_set_font(char *font) { }
 
-void render_draw_text(struct window *win, char *text, struct location loc, struct rect hahaimanotuseuyou, color fg, color bg) {
+// static inline void draw_char()
+
+void render_draw_text(struct window *win, char *text, struct location loc, color fg, color bg) {
 
 	struct rect area = { 0, 0 };
 	uint32_t current_width = 0;
@@ -108,5 +106,7 @@ void render_draw_text(struct window *win, char *text, struct location loc, struc
 
 	wl_surface_damage(win->surface, loc.x, loc.y, area.w, area.h);
 }
+
+// void render_draw_text_damage(struct )
 
 

@@ -45,21 +45,23 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 
 // most of theses errors dont free win
 struct window *create_window(struct rect size) {
+	if (size.w * size.h == 0) return err_null("[create_window] Can't create a window with no area");
+
 	struct window *win = malloc(sizeof(struct window));
-	if (!win) return NULL;
+	if (!win) return err_null("[create_window] Failed to malloc window");
 
 	win->size = size;
 
 	win->surface = wl_compositor_create_surface(compositor);
-	if (!win->surface) return err_null("Failed to create window surface");
+	if (!win->surface) return err_null("[create_window] Failed to create window surface");
 
 	win->surface_interface = wl_shell_get_shell_surface(shell, win->surface);
-	if (!win->surface_interface) return err_null("Failed to create window shell surface");
+	if (!win->surface_interface) return err_null("[create_window] Failed to create window shell surface");
 
 	wl_shell_surface_add_listener(win->surface_interface, &shell_surface_listener, NULL);
 	wl_shell_surface_set_toplevel(win->surface_interface);
 
-	int buffer_size = size.w * size.h * sizeof(pixel);
+	size_t buffer_size = size.w * size.h * sizeof(pixel);
 	win->shm_data_len = buffer_size * 2;
 
 	win->shm_filename = malloc(24);
@@ -68,18 +70,18 @@ struct window *create_window(struct rect size) {
 	ftruncate(fd, win->shm_data_len);
 
 	win->shm_data = mmap(NULL, win->shm_data_len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (win->shm_data == MAP_FAILED) return err_null("Failed to mmap shm file");
+	if (win->shm_data == MAP_FAILED) return err_null("[create_window] Failed to mmap shm file");
 
 	win->display.buffer_pixels = (pixel *)win->shm_data;
 	win->render.buffer_pixels  = (pixel *)win->shm_data + (size.w * size.h);
 
 	struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, win->shm_data_len);
-	if (!pool) return err_null("Failed to create shm pool");
+	if (!pool) return err_null("[create_window] Failed to create shm pool");
 
 	win->display.buffer = wl_shm_pool_create_buffer(pool, 0,           size.w, size.h, size.w * sizeof(pixel), pixel_format);
-	if (!win->display.buffer) return err_null("Failed to create display buffer");
+	if (!win->display.buffer) return err_null("[create_window] Failed to create display buffer");
 	win->render.buffer  = wl_shm_pool_create_buffer(pool, buffer_size, size.w, size.h, size.w * sizeof(pixel), pixel_format);
-	if (!win->render.buffer) return err_null("Failed to create render buffer");
+	if (!win->render.buffer) return err_null("[create_window] Failed to create render buffer");
 
 	wl_shm_pool_destroy(pool);
 	close(fd);
@@ -99,8 +101,7 @@ struct window *create_window(struct rect size) {
 // }
 
 void destroy_window(struct window *win) {
-	// wl_shell_surface_destroy((struct wl_shell_surface *)win->surface_interface);
-	wl_shell_surface_destroy(win->surface_interface);
+	wl_shell_surface_destroy((struct wl_shell_surface *)win->surface_interface);
 	wl_surface_destroy(win->surface);
 	wl_buffer_destroy(win->display.buffer);
 	wl_buffer_destroy(win->render.buffer);
@@ -151,7 +152,9 @@ void close_wayland(void) {
 
 int main(int argc, char **argv) {
 	init_wayland();
+	render_init();
 	int exit_code = client_run(argc, argv);
+	render_close();
 	close_wayland();
 	return exit_code;
 }

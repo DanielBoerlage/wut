@@ -10,8 +10,6 @@
 #include "../render/render.h"
 
 struct window *win;
-const color BLACK = 0xff000000;
-const color WHITE = 0xffffffff;
 
 char *read_file(FILE *file) {
 	size_t buff_size = 1024;
@@ -30,28 +28,14 @@ char *read_file(FILE *file) {
 	return out;
 }
 
-void terminate(int sig) {
-	destroy_window(win);
-	exit(0);
-}
-
 int client_run(int argc, char **argv) {
 
-	// win = create_window((struct rect){100, 100});
-
-	// render_draw_rect(win, (struct rect){100, 100}, (struct location){0, 0}, WHITE);
-	// render_draw_rect(win, (struct rect){10, 10}, (struct location){20, 20}, BLACK);
-	// render_draw_rect(win, (struct rect){10, 10}, (struct location){70, 20}, BLACK);
-	// render_draw_rect(win, (struct rect){60, 10}, (struct location){20, 70}, BLACK);
-	// render_display(win);
-
 	char *text = read_file(stdin);
-	render_set_font("fontfile");
 	struct rect area = render_text_area(text);
+
 	win = create_window(area);
-	render_draw_rect(win, area, (struct location) {0,0}, BLACK);
-	render_draw_text(win, text, (struct location) {0,0}, (struct rect) {1234,1234}, 0, 0);
-	// render_draw_rect(win, (struct rect) {2,3}, (struct location) {2,1}, WHITE);
+	if (!win) return -1;
+	render_draw_text(win, text, (struct location) {0,0}, 0, 0);
 
 	render_display(win);
 
@@ -77,10 +61,10 @@ int client_run(int argc, char **argv) {
 	// wl_surface_attach(win->surface, win->buffer[0], 0, 0);
 	// wl_surface_damage(win->surface, 0, 0, win->w, win->h);
 	// wl_surface_commit(win->surface);
-	return -1;
+	return 0;
 }
 
-void client_cleanup(void) {
+void client_exit(void) {
 	if (win) destroy_window(win);
 }
 
